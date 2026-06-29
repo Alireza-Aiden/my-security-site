@@ -66,6 +66,15 @@
       z-index: 9998;
     }
 
+    /* ── Matrix Theme ── */
+    body.matrix-mode {
+      --accent: #0f0;
+      --accent-dim: #008000;
+      --border-glow: #004d00;
+      --text-primary: #e0ffe0;
+      --success: #0f0;
+    }
+
     /* ── Grid background ── */
     .grid-bg {
       position: fixed;
@@ -146,7 +155,10 @@
     }
 
     .nav-links a:hover { color: var(--accent); }
-    .nav-links a:hover::after { width: 100%; }
+    .nav-links a:hover::after,
+    .nav-links a.active::after { width: 100%; }
+
+    .nav-links a.active { color: var(--accent); }
 
     .nav-status {
       display: flex;
@@ -423,6 +435,20 @@
     .term-line:nth-child(10) { animation-delay: 3.3s; }
     .term-line:nth-child(11) { animation-delay: 3.6s; }
     .term-line:nth-child(12) { animation-delay: 3.9s; }
+
+    .term-input {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      outline: none;
+      width: calc(100% - 20px);
+    }
+
+    .terminal-body {
+      overflow-y: auto;
+    }
 
     /* ── Stats Bar ── */
     .stats-bar {
@@ -977,6 +1003,7 @@
     <div class="nav-status">
       <span class="status-dot"></span>
       <span>OPERATIONAL</span>
+      <button id="matrix-toggle" class="btn-ghost" style="padding: 0.3rem 0.8rem; font-size: 0.7rem; margin-right: 1rem; border-color: var(--accent); color: var(--accent);">Matrix Mode</button>
     </div>
   </nav>
 
@@ -997,8 +1024,8 @@
           معماری امنیتی پیشگیرانه. کشف بیش از ۵۰ آسیب‌پذیری در سیستم‌های حیاتی.
         </p>
         <div class="hero-actions">
-          <button class="btn-primary">مشاهده تحقیقات</button>
-          <button class="btn-ghost">گزارش آسیب‌پذیری</button>
+          <a href="#research" class="btn-primary" style="text-decoration: none; display: inline-block;">مشاهده تحقیقات</a>
+          <a href="#contact" class="btn-ghost" style="text-decoration: none; display: inline-block;">گزارش آسیب‌پذیری</a>
         </div>
       </div>
 
@@ -1022,7 +1049,11 @@
           <div class="term-line"><span class="danger">[!] CVE-2024-3094  — Critical — XZ Utils</span></div>
           <div class="term-line"><span class="warning">[!] CVE-2024-21762 — High    — FortiOS</span></div>
           <div class="term-line"><span class="success">[✓] Hardening report generated</span></div>
-          <div class="term-line"><span class="prompt">$</span> <span class="cmd">_</span></div>
+          <div class="term-line" id="dummy-prompt"><span class="prompt">$</span> <span class="cmd">_</span></div>
+          <div class="term-line" id="term-input-line" style="display: none; animation: none; opacity: 1;">
+            <span class="prompt">$</span>
+            <input type="text" id="term-input" class="term-input" autocomplete="off" spellcheck="false" autofocus />
+          </div>
         </div>
       </div>
     </div>
@@ -1290,7 +1321,7 @@
         <div class="contact-links">
           <a href="#" class="contact-link">PGP Key</a>
           <a href="https://github.com/Alireza-Aiden" class="contact-link">GitHub</a>
-          <a href="A.alireza1347@gmail.com" class="contact-link">Email</a>
+          <a href="mailto:A.alireza1347@gmail.com" class="contact-link">Email</a>
           <a href="https://aidenweb.ir" class="contact-link">Blog</a>
         </div>
       </div>
@@ -1350,6 +1381,126 @@
         nav.style.background = 'rgba(5, 10, 14, 0.85)';
       }
     });
+
+    // ── Scroll Spy Navigation ──
+    const sections = document.querySelectorAll('section, #contact');
+    const navLinks = document.querySelectorAll('.nav-links a');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.clientHeight;
+        if (scrollY >= (sectionTop - sectionHeight / 3)) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (current !== '' && link.getAttribute('href').includes(current)) {
+          link.classList.add('active');
+        }
+      });
+    });
+
+    // ── Interactive Terminal ──
+    setTimeout(() => {
+      const inputLine = document.getElementById('term-input-line');
+      if (inputLine) {
+        inputLine.style.display = 'block';
+        const dummy = document.getElementById('dummy-prompt');
+        if (dummy) dummy.style.display = 'none';
+      }
+    }, 4500);
+
+    const termInput = document.getElementById('term-input');
+    const termBody = document.querySelector('.terminal-card .terminal-body');
+
+    if (termInput && termBody) {
+      termInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+          const val = this.value.trim();
+          this.value = '';
+          const inputLine = document.getElementById('term-input-line');
+
+          if (val !== '') {
+            const echoLine = document.createElement('div');
+            echoLine.className = 'term-line';
+            echoLine.style.animation = 'none';
+            echoLine.style.opacity = '1';
+
+            const promptSpan = document.createElement('span');
+            promptSpan.className = 'prompt';
+            promptSpan.textContent = '$';
+
+            const cmdSpan = document.createElement('span');
+            cmdSpan.className = 'cmd';
+            cmdSpan.textContent = ' ' + val;
+
+            echoLine.appendChild(promptSpan);
+            echoLine.appendChild(cmdSpan);
+
+            termBody.insertBefore(echoLine, inputLine);
+
+            const responseLine = document.createElement('div');
+            responseLine.className = 'term-line';
+            responseLine.style.animation = 'none';
+            responseLine.style.opacity = '1';
+
+            const responseSpan = document.createElement('span');
+
+            switch(val.toLowerCase()) {
+              case 'help':
+                responseSpan.className = 'info';
+                responseSpan.textContent = 'Available commands: help, whoami, skills, projects, clear';
+                break;
+              case 'whoami':
+                responseSpan.className = 'success';
+                responseSpan.textContent = 'Defensive Security Researcher (defsec@research)';
+                break;
+              case 'skills':
+                responseSpan.className = 'success';
+                responseSpan.textContent = 'IDS/IPS, Malware Analysis, Pentesting, Reverse Engineering';
+                break;
+              case 'projects':
+                responseSpan.className = 'success';
+                responseSpan.textContent = 'RES-001 (Critical), RES-002 (High), RES-003 (Medium)';
+                break;
+              case 'clear':
+                termBody.innerHTML = '';
+                termBody.appendChild(inputLine);
+                return;
+              default:
+                responseSpan.className = 'danger';
+                responseSpan.textContent = `bash: ${val}: command not found`;
+            }
+
+            responseLine.appendChild(responseSpan);
+            termBody.insertBefore(responseLine, inputLine);
+          }
+
+          termBody.scrollTop = termBody.scrollHeight;
+        }
+      });
+
+      termBody.addEventListener('click', () => {
+        termInput.focus();
+      });
+    }
+
+    // ── Matrix Mode Toggle ──
+    const matrixToggle = document.getElementById('matrix-toggle');
+    if (matrixToggle) {
+      matrixToggle.addEventListener('click', () => {
+        document.body.classList.toggle('matrix-mode');
+        if (document.body.classList.contains('matrix-mode')) {
+          matrixToggle.textContent = 'Normal Mode';
+        } else {
+          matrixToggle.textContent = 'Matrix Mode';
+        }
+      });
+    }
   </script>
 
 </body>
